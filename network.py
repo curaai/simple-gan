@@ -25,7 +25,6 @@ class Generator:
             G_W3 = tf.Variable(tf.random_normal([self.n_hidden, self.n_input], stddev=0.01))
             output = tf.nn.sigmoid(tf.matmul(G_W2, G_W3))
 
-            self.var_list = [G_W1, G_W2, G_W3, output]
             return output
 
 
@@ -47,7 +46,6 @@ class Discriminator:
             D_W3 = tf.Variable(tf.random_normal([self.n_hidden, 1], stddev=0.01))
             output = tf.nn.sigmoid(tf.matmul(D_W2, D_W3))
 
-            self.var_list = [D_W1, D_W2, D_W3, output]
             return output
 
 
@@ -80,8 +78,11 @@ def main():
     loss_D = tf.reduce_mean(tf.log(D_real) + tf.log(1 - D_fake))
     loss_G = tf.reduce_mean(tf.log(D_fake))
 
-    train_D = tf.train.AdamOptimizer(learning_rate).minimize(-loss_D, var_list=D.var_list)
-    train_G = tf.train.AdamOptimizer(learning_rate).minimize(-loss_G, var_list=G.var_list)
+    vars_D = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=D.name)
+    vars_G = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=G.name)
+
+    train_D = tf.train.AdamOptimizer(learning_rate).minimize(-loss_D, var_list=vars_D)
+    train_G = tf.train.AdamOptimizer(learning_rate).minimize(-loss_G, var_list=vars_G)
 
     # train
     with tf.Session() as sess:
@@ -103,7 +104,7 @@ def main():
             if epoch == 0 or (epoch + 1) % 10 == 0:
                 sample_size = 10
                 noise = get_noise(sample_size, n_noise)
-                samples = sess.run(G, feed_dict={Z: noise})
+                samples = sess.run(g, feed_dict={Z: noise})
 
                 fig, ax = plt.subplots(1, sample_size, figsize=(sample_size, 1))
 
@@ -113,3 +114,7 @@ def main():
 
                 plt.savefig('samples/{}.png'.format(str(epoch).zfill(3)), bbox_inches='tight')
                 plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
